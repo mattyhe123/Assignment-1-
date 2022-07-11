@@ -1,0 +1,750 @@
+// cs_hotel
+//
+// This program was written by Brandon Luu (z5419784)
+// on 28/07/2022
+//
+// A program 
+
+#include <stdio.h>
+
+// Additional libraries here
+
+// Provided constants
+#define TRUE 1
+#define FALSE 0
+
+#define TOTAL_FLOORS 8
+#define ROOMS_PER_FLOOR 8
+#define INITIAL_PRICE 10
+#define NO_BOOKING -1
+#define NOT_ROYALTY 0
+#define IS_ROYALTY 1
+#define NOT_GROUP -1
+
+// Your constants here
+
+// Provided struct
+struct room {
+    int booking_id;
+    int price;
+    int royalty;
+    int group_id;
+};
+
+// Provided functions use for game setup
+// You do not need to use these functions yourself.
+void init_hotel(struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]);
+
+// You will need to use these functions for stage 1.
+void print_hotel(struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]);
+void print_hotel_with_prices(struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]);
+
+// Your function prototypes here:
+int scan_num_guests(void);
+void find_booking_id(
+    int floor_num, 
+    int room_num, 
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int add_guest(
+    int floor_num, 
+    int room_num,
+    int id, 
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int remove_guest(
+    int floor_num,
+    int room_num,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+void set_floor_price(
+    int floor_num,
+    int price,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+void increase_room_price(
+    int price,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int calculate_revenue(
+    int old_revenue,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int add_to_best_room(
+    int id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+void swap_rooms(
+    int floor_num_a,
+    int room_num_a,
+    int floor_num_b,
+    int room_num_b,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int group_bookings_1 (
+    int group_number,
+    int id,
+    int group_id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int group_bookings_2 (
+    int group_number,
+    int budget,
+    int id,
+    int group_id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int royal_booking (
+    int floor_num,
+    int room_num,
+    int id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+int group_count (
+    int id,
+    int floor_num,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+);
+
+int main(void) {
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR];
+    init_hotel(hotel);
+
+    printf("Welcome to the CS Hotel!!\n\n");
+    
+    int num_guests = scan_num_guests();
+    
+    //printf("%d\n", num_guests); // check no. of guests
+    
+    int id = 0;
+    int floor_number;
+    int room_number;
+    int loop = 0;
+    
+    while (loop < num_guests) {
+        scanf("%d %d", &floor_number, &room_number);
+        
+        if (floor_number > TOTAL_FLOORS - 1 || floor_number < 0) {
+            printf("Invalid room number!\n");
+        } else if (room_number > ROOMS_PER_FLOOR - 1 || room_number < 0) {
+            printf("Invalid room number!\n");
+        } else if ((hotel[floor_number][room_number].booking_id != NO_BOOKING)) {
+            printf("Room already occupied!\n");
+        } else {
+            hotel[floor_number][room_number].booking_id = id;
+            id++;
+        }
+        loop++;
+    }   
+            
+        
+    // TODO: Add your setup phase
+
+    print_hotel(hotel);
+    
+    char command;
+    int floor_number_a;
+    int floor_number_b;
+    int room_number_a;
+    int room_number_b;
+    int price;
+    int old_revenue = 0;
+    int option;
+    int group_number = 0;
+    int budget;
+    int group_id = 0;
+    //int temp_id;
+    
+    printf("Enter a command: ");
+    
+    while (scanf(" %c", &command) != EOF) {
+        if (command == 'p') {
+            print_hotel(hotel);
+            
+        } else if (command == '?') {
+            scanf("%d %d", &floor_number_a, &room_number_a);
+            find_booking_id(floor_number_a, room_number_a, hotel);
+        
+        } else if (command == 'a') {
+            scanf("%d %d", &floor_number_a, &room_number_a);
+            // Increases id if guest is added
+            if (add_guest(floor_number_a, room_number_a, id, hotel) != 0) {
+                id++;
+            }
+            
+        } else if (command == 'l') {
+            scanf("%d %d", &floor_number_a, &room_number_a);
+            if (remove_guest(floor_number_a, room_number_a, hotel) == 1) {
+                printf("Goodbye booking %d!\n", 
+                    hotel[floor_number_a][room_number_a].booking_id);
+                hotel[floor_number_a][room_number_a].booking_id = NO_BOOKING;
+                hotel[floor_number_a][room_number_a].royalty = NOT_ROYALTY;
+                hotel[floor_number_a][room_number_a].group_id = NOT_GROUP;
+            }
+            
+        } else if (command == 'c') {
+            print_hotel_with_prices(hotel);
+        
+        } else if (command == '$') {
+            scanf("%d %d", &floor_number_a, &price);
+            set_floor_price(floor_number_a, price, hotel);
+
+        } else if (command == '^') {
+            scanf("%d", &price);
+            increase_room_price(price, hotel);
+
+        } else if (command == 'r') {
+            old_revenue = calculate_revenue(old_revenue, hotel);
+            
+        } else if (command == 'j') {
+            // Increases id if guest is added
+            if (add_to_best_room(id, hotel) != 0) {
+                id++;
+            }
+        
+        } else if (command == 's') {
+            scanf("%d %d %d %d", &floor_number_a, &room_number_a, 
+                                 &floor_number_b, &room_number_b);
+            swap_rooms(
+                floor_number_a,
+                room_number_a,
+                floor_number_b,
+                room_number_b,
+                hotel
+            );
+            
+
+        } else if (command == 'g') {
+            scanf("%d", &option);
+            if (option == 1) {
+                scanf("%d", &group_number);
+                // Increases id if group is added
+                if (group_bookings_1(group_number, id, group_id, hotel) == 1) {
+                    id++;
+                    group_id++;
+                } else {
+                    printf("No available floor for your group booking!\n");
+                }
+            
+            } else if (option == 2) {
+                scanf("%d %d", &group_number, &budget);
+                // Increases id if group is added
+                if (group_bookings_2(group_number, budget, id,
+                                                group_id, hotel) == 1) {
+                    id++;
+                    group_id++;
+                }
+            }
+                
+            
+        } else if (command == '!') {
+            scanf("%d %d", &floor_number_a, &room_number_a);
+            
+            if (royal_booking(floor_number_a, room_number_a, id, hotel) == 1) {
+                id++;
+            
+            }
+        }
+            
+        printf("Enter a command: ");
+    }
+
+
+    // TODO: keep scanning in commands from the user until the user presses
+    // ctrl-d
+    
+    printf("Bye!\n");
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////////// ADDITIONAL FUNCTIONS /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// TODO: you may need to add additional functions here
+
+int scan_num_guests(void) {
+    int num_guests;
+    
+    printf("Add your current guests, how many guests? ");
+    scanf("%d", &num_guests);
+    printf("Input in your guests room numbers\n");
+    return num_guests;
+}
+
+void find_booking_id(
+    int floor_num,
+    int room_num, 
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+                     
+    if (floor_num > TOTAL_FLOORS - 1 || floor_num < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (room_num > ROOMS_PER_FLOOR - 1 || room_num < 0) {
+        printf("Invalid room number!\n");
+    
+    } else if (hotel[floor_num][room_num].booking_id == NO_BOOKING) {
+        printf("Floor %d, Room %d is empty.\n", floor_num, room_num);
+        
+    } else {
+        printf("Booking ID at Floor %d, Room %d is : %d\n", floor_num,
+                room_num, hotel[floor_num][room_num].booking_id);
+    }
+}
+
+int add_guest(
+    int floor_num, 
+    int room_num,
+    int id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+
+    if (floor_num > TOTAL_FLOORS - 1 || floor_num < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (room_num > ROOMS_PER_FLOOR - 1 || room_num < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (hotel[floor_num][room_num].booking_id != NO_BOOKING) {
+        printf("Room already occupied!\n");
+    
+    } else {
+        printf("Guest's booking id is: %d\n", id);
+        hotel[floor_num][room_num].booking_id = id;
+        return 1;
+    }
+    return 0;
+}
+
+int remove_guest(
+    int floor_num,
+    int room_num,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    
+    if (floor_num > TOTAL_FLOORS - 1 || floor_num < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (room_num > ROOMS_PER_FLOOR - 1 || room_num < 0) {
+        printf("Invalid room number!\n");
+     
+    } else if (hotel[floor_num][room_num].booking_id == NO_BOOKING) {
+        printf("This room is already empty.\n");
+     
+    } else {
+        return 1;
+
+    }
+    return 0;
+}
+
+void set_floor_price(
+    int floor_num,
+    int price,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    if (floor_num > TOTAL_FLOORS - 1 || floor_num < 0) {
+        printf("Invalid floor number!\n");
+    
+    } else if (price < 0) {
+        printf("Invalid price!\n");
+    
+    } else {
+        int y = 0;
+        while (y < ROOMS_PER_FLOOR) {
+            hotel[floor_num][y].price = price;
+            y++;
+        }
+    }
+}
+
+void increase_room_price(
+    int price,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    int x = 0;
+    while (x < TOTAL_FLOORS) {
+        int y = 0;
+        while (y < ROOMS_PER_FLOOR) {
+            hotel[x][y].price = hotel[x][y].price + price;
+            if (hotel[x][y].price < 0) {
+                hotel[x][y].price = 0;
+            }
+            y++;
+        }
+        x++;
+    }
+}
+
+int calculate_revenue(
+    int old_revenue,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    int x = 0;
+    int revenue = 0;
+    while (x < TOTAL_FLOORS) {
+        int y = 0;
+        while (y < ROOMS_PER_FLOOR) {
+            if (hotel[x][y].booking_id != NO_BOOKING) {
+                revenue = revenue + hotel[x][y].price;
+            }
+            y++;
+        }
+        x++;
+    }
+    printf("The total revenue for the night is $%d\n", revenue);
+    if (revenue > old_revenue) {
+        int difference = revenue - old_revenue;
+        printf("This is $%d more than last time :)\n", difference);
+    
+    } else if (revenue < old_revenue) {
+        int difference = old_revenue - revenue;
+        printf("This is $%d less than last time (haha lol)\n", difference);
+        
+    } else if (revenue == old_revenue) {
+        printf("This is the same as the last time you asked :\\\n");
+                
+    }
+    return revenue;
+}
+
+int add_to_best_room(
+    int id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    int x = 0;
+    int room_found = 0;
+    while (x < TOTAL_FLOORS && room_found == 0) {
+        int y = 0;
+        while (y < ROOMS_PER_FLOOR && room_found == 0) {
+            if (hotel[x][y].booking_id == NO_BOOKING) {
+                hotel[x][y].booking_id = id;
+                room_found++;
+            }
+            y++;
+        }
+        x++;
+    }
+    
+    if (room_found == 0) {
+        printf("The hotel is full!\n");
+        return 0;
+    }
+    return 1;
+}
+
+void swap_rooms(
+    int floor_num_a,
+    int room_num_a,
+    int floor_num_b,
+    int room_num_b,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    if (floor_num_a > TOTAL_FLOORS - 1 || floor_num_a < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (room_num_a > ROOMS_PER_FLOOR - 1 || room_num_a < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (floor_num_b > TOTAL_FLOORS - 1 || floor_num_b < 0) {
+        printf("Invalid room number!\n");
+        
+    } else if (room_num_b > ROOMS_PER_FLOOR - 1 || room_num_b < 0) {
+        printf("Invalid room number!\n");
+        
+    } else {
+    
+        int temp_id = hotel[floor_num_a][room_num_a].booking_id;
+        int temp_royalty = hotel[floor_num_a][room_num_a].royalty;
+        int temp_group_id = hotel[floor_num_a][room_num_a].group_id;
+        
+        hotel[floor_num_a][room_num_a].booking_id = 
+            hotel[floor_num_b][room_num_b].booking_id;
+        hotel[floor_num_a][room_num_a].royalty =
+            hotel[floor_num_b][room_num_b].royalty;
+        hotel[floor_num_a][room_num_a].group_id =
+            hotel[floor_num_b][room_num_b].group_id;
+            
+        hotel[floor_num_b][room_num_b].booking_id = temp_id;
+        hotel[floor_num_b][room_num_b].royalty = temp_royalty;
+        hotel[floor_num_b][room_num_b].group_id = temp_group_id;
+        
+        
+    }
+} 
+
+int group_bookings_1 (
+    int group_number,
+    int id,
+    int group_id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    int cheapest_floor = NO_BOOKING;
+    int x = 0;
+    int y = 0;
+    int cheapest_price = 0;
+    int num_rooms_open = 0;
+    
+    while (x < TOTAL_FLOORS) {
+        // If price on floor is <= cheapest price
+        if (hotel[x][y].price <= cheapest_price || cheapest_price == 0) {
+            cheapest_price = hotel[x][y].price;
+            while (y < ROOMS_PER_FLOOR) {
+                if (hotel[x][y].booking_id == NO_BOOKING) {
+                    num_rooms_open++;
+                }
+                y++;
+            }
+            // If floor has enough room, assign floor num to x
+            if (num_rooms_open >= group_number) {
+                cheapest_floor = x;
+            }
+        }
+        x++;
+        y = 0;
+        num_rooms_open = 0;
+    }
+    
+    if (cheapest_floor == NO_BOOKING) {
+        return 0;
+    
+    } else {
+        y = 0;
+        x = cheapest_floor;
+        while (y < ROOMS_PER_FLOOR && group_number != 0) {
+            if (hotel[x][y].booking_id == NO_BOOKING) {
+                hotel[x][y].booking_id = id;
+                hotel[x][y].group_id = group_id;
+                group_number--;
+            }
+            y++;
+        }
+    }
+    return 1;
+}
+
+int group_bookings_2 (
+    int group_number,
+    int budget,
+    int id,
+    int group_id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    int floor_available = NO_BOOKING;
+    int floor_found = 0;
+    int x = 0;
+    int num_rooms_open = 0;
+    
+    while (x < TOTAL_FLOORS && floor_found == 0) {
+        int y = 0;
+        while (y < ROOMS_PER_FLOOR) {
+            // counts the number of rooms open on floor within budget
+            if (hotel[x][y].booking_id == NO_BOOKING  
+                                       && hotel[x][y].price <= budget) {
+                num_rooms_open++;
+            }
+            y++;
+        }
+        if (num_rooms_open >= group_number && floor_found == 0) {
+            floor_available = x;
+            floor_found = 1;
+        }
+        x++;
+    }
+    if (floor_found == 0) {
+        printf("No available floor for your group booking!\n");
+        return 0;
+        
+    } else {
+        int y = 0;
+        x = floor_available;
+        while (y < ROOMS_PER_FLOOR && group_number != 0) {
+            if (hotel[x][y].booking_id == NO_BOOKING) {
+                hotel[x][y].booking_id = id;
+                hotel[x][y].group_id = group_id;
+                group_number--;
+            }
+            y++;
+        }
+    }
+    return 1;
+}
+
+int royal_booking (
+    int floor_num,
+    int room_num,
+    int id,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    
+    int group_number = 0;
+    if (hotel[floor_num][room_num].booking_id == NO_BOOKING) {
+        hotel[floor_num][room_num].booking_id = id;
+        hotel[floor_num][room_num].royalty = IS_ROYALTY;
+        return 1;
+        
+    } else if (hotel[floor_num][room_num].royalty == IS_ROYALTY) {
+        printf("Your Royal Highness, this room is not available\n");
+        return 0;
+    
+    } else if (hotel[floor_num][room_num].group_id == NOT_GROUP) {
+        int temp_id = hotel[floor_num][room_num].booking_id;
+        remove_guest(floor_num, room_num, hotel);
+        hotel[floor_num][room_num].booking_id = id;
+        hotel[floor_num][room_num].royalty = IS_ROYALTY;
+        add_to_best_room(temp_id, hotel);
+        return 1;
+        
+    } else {
+        int temp_id = hotel[floor_num][room_num].booking_id;
+        int temp_group_id = hotel[floor_num][room_num].group_id;
+        int x = 0;
+        // Clears group from all rooms
+        while (x < TOTAL_FLOORS) {
+            int y = 0;
+            while (y < ROOMS_PER_FLOOR) {
+                if (hotel[x][y].group_id == temp_group_id) {
+                    hotel[x][y].booking_id = NO_BOOKING;
+                    hotel[x][y].group_id = NOT_GROUP;
+                    group_number++;
+                }
+                y++;
+            }
+            x++;
+        }
+        // Adds royalty to room
+        hotel[floor_num][room_num].booking_id = id;
+        hotel[floor_num][room_num].royalty = IS_ROYALTY;
+       
+        if (group_bookings_1(group_number, temp_id, 
+                                    temp_group_id, hotel) == 0) {
+            printf("No available floor for your group booking!\n");
+        }
+    }
+    return 1;
+}
+        
+        
+        
+int group_count (
+    int id,
+    int floor_num,
+    struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]
+) {
+    int y = 0;
+    int group_number = 0;
+    while (y < ROOMS_PER_FLOOR) {
+        if (hotel[floor_num][y].booking_id == id) {
+            group_number++;
+        }
+        y++;
+    }
+    return group_number;
+}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// PROVIDED FUNCTIONS //////////////////////////////
+/////////////////////////// (DO NOT EDIT BELOW HERE) ///////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// Provided Function (you shouldn't need to edit this in stage 1 or 2)
+// Initalises the booking id and price of each room in the hotel to be
+// the default values.
+void init_hotel(struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]) {
+    int row = 0;
+    while (row < TOTAL_FLOORS) {
+        int col = 0;
+        while (col < ROOMS_PER_FLOOR) {
+            hotel[row][col].booking_id = NO_BOOKING;
+            hotel[row][col].price = INITIAL_PRICE;
+            hotel[row][col].royalty = NOT_ROYALTY;
+            hotel[row][col].group_id = NOT_GROUP;
+            col++;
+        }
+        row++;
+    }
+}
+
+// Provided Function - DO NOT EDIT
+// Prints out the hotel with the booking number of each room, or empty
+// if there is no booking.
+void print_hotel(struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]) {
+    printf(
+        "\n"
+        "         /--^--\\\n"
+        "   _     |  O  |     _\n"
+        " _/ \\___/_^___^_\\___/ \\_\n"
+        "/                       \\\n");
+
+    int row = 0;
+    while (row < TOTAL_FLOORS) {
+        int col = 0;
+        printf("|--+--+--+--+--+--+--+--|\n");
+        while (col < ROOMS_PER_FLOOR) {
+            printf("|");
+            if (hotel[row][col].booking_id == NO_BOOKING) {
+                printf("  ");
+            } else {
+                printf("%02d", hotel[row][col].booking_id);
+            }
+            col++;
+        }
+        printf("|\n");
+        row++;
+    }
+    printf(
+        "|--+--+--+--+--+--+--+--|\n"
+        "|         /^^^\\         |\n"
+        "|_________|_\"_|_________|\n\n");
+}
+
+// Provided Function - DO NOT EDIT
+// Prints out the hotel with the the price and booking number included.
+void print_hotel_with_prices(struct room hotel[TOTAL_FLOORS][ROOMS_PER_FLOOR]) {
+    printf(
+        "\n"
+        "             /--^--\\\n"
+        "   _         |  O  |         _\n"
+        " _/ \\_______/_^___^_\\_______/ \\_\n"
+        "/                               \\\n");
+
+    int row = 0;
+    while (row < TOTAL_FLOORS) {
+        int col = 0;
+        printf("|---+---+---+---+---+---+---+---|\n");
+        while (col < ROOMS_PER_FLOOR) {
+            printf("|");
+            if (hotel[row][col].booking_id == NO_BOOKING) {
+                printf("   ");
+            } else {
+#ifndef NO_COLORS
+                printf("\033[1;35m");
+#endif
+                printf("%03d", hotel[row][col].booking_id);
+#ifndef NO_COLORS
+                printf("\033[0m");
+#endif
+            }
+            col++;
+        }
+        printf("|\n");
+        col = 0;
+        while (col < ROOMS_PER_FLOOR) {
+            printf("|");
+#ifndef NO_COLORS
+            printf("\033[1;32m");
+#endif
+            printf("%03d", hotel[row][col].price);
+#ifndef NO_COLORS
+            printf("\033[0m");
+#endif
+            col++;
+        }
+        printf("|\n");
+        row++;
+    }
+    printf(
+        "|---+---+---+---+---+---+---+---|\n"
+        "|             /^^^\\             |\n"
+        "|_____________|_\"_|_____________|\n\n");
+}
